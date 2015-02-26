@@ -19,9 +19,12 @@ int numAsteroids;
 double astRadius,minAstVel,maxAstVel; 
 int astNumHits,astNumSplit;
 int level; //the current level number
-int totalShots;
-int shotsOnTarget;
+double totalShots;
+double shotsOnTarget;
 double hitPrct;
+double score; 
+int lives; 
+double highscore;
 
 	public void init(){
 		resize(500,500);
@@ -38,6 +41,9 @@ double hitPrct;
 		framePeriod=25;
 		totalShots=0;
 		shotsOnTarget=0;
+		score = 0;
+		lives = 5;
+		highscore = 0;
 		addKeyListener(this); //tell it to listen for KeyEvents
 		dim=getSize();
 		img=createImage(dim.width, dim.height);
@@ -46,10 +52,14 @@ double hitPrct;
 		thread.start();
 	}
 	
-	public void setUpNextLevel(){ //starts a new level with one more asteroid
-		level++;
+	public void setUpNewGame(){ //starts a game
+		level = 0;
 		ship=new Ship(250,250,0,.35,.98,.1,12);
 		numShots=0; //no shots on the screen at beginning of level
+		totalShots=0;
+		shotsOnTarget=0;
+		score = 0;
+		lives = 5;
 		paused=false;
 		shooting=false;
 		asteroids=new Asteroid[level * (int)Math.pow(astNumSplit,astNumHits-1)+1]; 
@@ -58,6 +68,16 @@ double hitPrct;
 		for(int i=0;i<numAsteroids;i++)
 			asteroids[i]=new Asteroid(Math.random()*dim.width,Math.random()*dim.height,astRadius,minAstVel, maxAstVel,astNumHits,astNumSplit);
 	} 
+	public void setUpNextLevel(){
+		level++;
+		ship=new Ship(250,250,0,.35,.98,.1,12);
+		paused=false;
+		shooting=false;
+		asteroids=new Asteroid[level * (int)Math.pow(astNumSplit,astNumHits-1)+1]; 
+		numAsteroids=level;
+		for(int i=0;i<numAsteroids;i++)
+			asteroids[i]=new Asteroid(Math.random()*dim.width,Math.random()*dim.height,astRadius,minAstVel, maxAstVel,astNumHits,astNumSplit);
+	}
 
 	public void paint(Graphics gfx){
 		g.setColor(Color.black);
@@ -71,9 +91,11 @@ double hitPrct;
 		
 		ship.draw(g); //draw the ship
 		g.setColor(Color.cyan); //Display the level number in top left corner
-		g.drawString("Level " + level,20,20); 
+		g.drawString("Level " + level,20,20);
+		g.drawString("Score " + score,20,40);
 		g.drawString("Hit Percentage " + (int) hitPrct + "%",380,20);
-		
+		g.drawString("Lives: " + lives, 440,40);
+		g.drawString("High Score: " + highscore, 200,20);
 		gfx.drawImage(img,0,0,this); 
 	}
 	
@@ -88,6 +110,11 @@ double hitPrct;
 			//start next level when all asteroids are destroyed
 			if(numAsteroids<=0)
 				setUpNextLevel(); 
+			if(lives<=0){
+				setUpNewGame(); 
+			}
+			if (score > highscore)
+				highscore = score;
 			
 			if(!paused){
 				ship.move(dim.width,dim.height); //move the ship
@@ -100,7 +127,7 @@ double hitPrct;
 					}
 				}
 				
-				if (totalShots == 0){
+				if (totalShots < 0){
 					hitPrct=0;
 				}else{
 				hitPrct = shotsOnTarget/totalShots*100;
@@ -137,6 +164,7 @@ double hitPrct;
 	private void deleteAsteroid(int index){
 		//delete asteroid and shift ones after it up in the array
 		numAsteroids--;
+		score += 10*level;
 		for(int i=index;i<numAsteroids;i++)
 			asteroids[i]=asteroids[i+1];
 			asteroids[numAsteroids]=null;
@@ -156,6 +184,7 @@ double hitPrct;
 			//level if the ship gets hit
 			if(asteroids[i].shipCollision(ship)){
 				level--; //restart this level
+				lives --;
 				numAsteroids=0;
 				return;
 			}
